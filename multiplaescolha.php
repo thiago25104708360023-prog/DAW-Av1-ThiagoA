@@ -1,1 +1,2 @@
-<?php include 'config.php'; 
+<?php
+require_once 'config.php';
