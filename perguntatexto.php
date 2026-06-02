@@ -1,27 +1,3 @@
-<?php
-require_once 'config.php';
-
-$id = $_GET['editar'] ?? null;
-$perguntas = lerPerguntas();
-$editando = ($id !== null) ? $perguntas[$id] : null;
-
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $titulo = str_replace('|', '-', $_POST['titulo']);
-    $resposta = str_replace('|', '-', $_POST['resposta_texto']);
-    $nova_pergunta = [$titulo, 'texto', $resposta];
-
-    if ($id !== null) {
-        $perguntas[$id] = $nova_pergunta;
-    } else {
-        $perguntas[] = $nova_pergunta;
-    }
-    
-    salvarPerguntas($perguntas);
-    header("Location: index.php");
-    exit;
-}
-?>
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -30,22 +6,60 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <style>
         body { font-family: Arial; padding: 30px; }
         form { background: white; padding: 20px; border: 1px solid #ccc; max-width: 500px; }
-        input { width: 100%; margin: 10px 0; padding: 8px; }
-        .btn-save { background: #007bff; color: white; border: none; cursor: pointer; padding: 10px; }
+        input { width: 100%; margin: 10px 0; padding: 8px; box-sizing: border-box; }
+        .btn-save { background: #007bff; color: white; border: none; cursor: pointer; padding: 10px; width: 100%; margin-bottom: 10px;}
     </style>
 </head>
 <body>
-    <h2><?php echo $editando ? "Editar" : "Criar"; ?> Pergunta de Texto</h2>
-    <form method="POST">
+    <h2 id="titulo-pagina">Criar Pergunta de Texto</h2>
+    <form id="form-pergunta">
+        <input type="hidden" id="id-pergunta">
+        
         <label>Pergunta/Situação:</label>
-        <input type="text" name="titulo" value="<?php echo $editando[0] ?? ''; ?>" required>
+        <input type="text" id="titulo" required>
         
         <label>Resposta Correta Sugerida:</label>
-        <input type="text" name="resposta_texto" value="<?php echo $editando[2] ?? ''; ?>" required>
+        <input type="text" id="resposta_texto" required>
         
         <button type="submit" class="btn-save">Salvar Pergunta</button>
         <a href="index.php">Voltar</a>
     </form>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const idEdit = urlParams.get('editar');
+
+        if (idEdit !== null) {
+            document.getElementById('titulo-pagina').innerText = "Editar Pergunta de Texto";
+            fetch(`api.php?id=${idEdit}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data) {
+                        document.getElementById('id-pergunta').value = idEdit;
+                        document.getElementById('titulo').value = data[0];
+                        document.getElementById('resposta_texto').value = data[2];
+                    }
+                });
+        }
+
+        document.getElementById('form-pergunta').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const dados = {
+                id: document.getElementById('id-pergunta').value,
+                titulo: document.getElementById('titulo').value,
+                tipo: 'texto',
+                resposta: document.getElementById('resposta_texto').value
+            };
+
+            await fetch('api.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dados)
+            });
+
+            window.location.href = 'index.php';
+        });
+    </script>
 </body>
 </html>
-
