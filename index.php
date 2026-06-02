@@ -1,17 +1,3 @@
-<?php
-require_once 'config.php';
-
-if (isset($_GET['excluir'])) {
-    $perguntas = lerPerguntas();
-    unset($perguntas[$_GET['excluir']]);
-    salvarPerguntas($perguntas);
-    header("Location: index.php");
-    exit;
-}
-
-$perguntas = lerPerguntas();
-?>
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -22,7 +8,7 @@ $perguntas = lerPerguntas();
         .menu { margin-bottom: 20px; padding: 15px; background: white; border-radius: 8px; }
         table { width: 100%; border-collapse: collapse; background: white; }
         th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        .btn { padding: 8px 12px; text-decoration: none; border-radius: 4px; color: white; margin-right: 5px; }
+        .btn { padding: 8px 12px; text-decoration: none; border-radius: 4px; color: white; margin-right: 5px; border: none; cursor: pointer; }
         .btn-add { background: #28a745; }
         .btn-edit { background: #007bff; }
         .btn-del { background: #dc3545; }
@@ -38,23 +24,51 @@ $perguntas = lerPerguntas();
     </div>
 
     <table>
-        <tr>
-            <th>ID</th>
-            <th>Pergunta</th>
-            <th>Tipo</th>
-            <th>Ações</th>
-        </tr>
-        <?php foreach ($perguntas as $id => $p): ?>
-        <tr>
-            <td><?php echo $id; ?></td>
-            <td><?php echo $p[0]; ?></td>
-            <td><?php echo ($p[1] == 'multipla') ? 'Múltipla Escolha' : 'Texto'; ?></td>
-            <td>
-                <a href="<?php echo ($p[1] == 'multipla' ? 'multipla_escolha.php' : 'pergunta_texto.php'); ?>?editar=<?php echo $id; ?>" class="btn btn-edit">Editar</a>
-                <a href="index.php?excluir=<?php echo $id; ?>" class="btn btn-del" onclick="return confirm('Deseja excluir?')">Excluir</a>
-            </td>
-        </tr>
-        <?php endforeach; ?>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Pergunta</th>
+                <th>Tipo</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody id="tabela-corpo">
+            </tbody>
     </table>
+
+    <script>
+        async function carregarPerguntas() {
+            const response = await fetch('api.php');
+            const perguntas = await response.json();
+            const tbody = document.getElementById('tabela-corpo');
+            tbody.innerHTML = ''; 
+
+            perguntas.forEach((p, id) => {
+                const tipoTexto = p[1] === 'multipla' ? 'Múltipla Escolha' : 'Texto';
+                const linkEditar = p[1] === 'multipla' ? 'multipla_escolha.php' : 'pergunta_texto.php';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${id}</td>
+                    <td>${p[0]}</td>
+                    <td>${tipoTexto}</td>
+                    <td>
+                        <a href="${linkEditar}?editar=${id}" class="btn btn-edit">Editar</a>
+                        <button onclick="excluirPergunta(${id})" class="btn btn-del">Excluir</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function excluirPergunta(id) {
+            if (confirm('Deseja excluir?')) {
+                await fetch(`api.php?id=${id}`, { method: 'DELETE' });
+                carregarPerguntas(); 
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', carregarPerguntas);
+    </script>
 </body>
 </html>
